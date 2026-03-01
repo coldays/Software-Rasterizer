@@ -1,6 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 using SoftwareRasterizer.Types;
+using System.Diagnostics;
 
 namespace SoftwareRasterizer.Core;
 
@@ -17,12 +18,16 @@ public static class Engine
 		Raylib.SetTextureFilter(texture, TextureFilter.Point);
 		Color[] texColBuffer = new Color [target.Width * target.Height * 4]; // RGBA
 
+		Stopwatch sw = new();
 		// Render loop
 		while (!Raylib.WindowShouldClose())
 		{
+			sw.Restart();
 			// Update and rasterize scene
 			scene.Update(target, Raylib.GetFrameTime());
 			Rasterizer.Render(target, scene.Data);
+			sw.Stop();
+			Console.WriteLine(sw.ElapsedMilliseconds);
 
 			// Write rasterizer output to texture and display on window
 			Raylib.UpdateTexture(texture, texColBuffer);
