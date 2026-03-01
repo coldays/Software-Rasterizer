@@ -1,4 +1,5 @@
 using SoftwareRasterizer.Types;
+using System.Numerics;
 using static System.MathF;
 
 namespace SoftwareRasterizer.Demo;
@@ -8,7 +9,7 @@ public class TerrainGen
 	const int seed = 42;
 	static OpenSimplexNoise noiseGen = new(seed); // thanks to digitalshadow & KdotJPG
 
-	static float CalculateElevation(float2 pos)
+	static float CalculateElevation(Vector2 pos)
 	{
 		const int layerCount = 5;
 		const float lacunarity = 2f; // how fast detail increases per layer
@@ -21,7 +22,7 @@ public class TerrainGen
 
 		for (int i = 0; i < layerCount; i++)
 		{
-			float noise = noiseGen.Evaluate(pos.x * frequency, pos.y * frequency);
+			float noise = noiseGen.Evaluate(pos.X * frequency, pos.Y * frequency);
 			if (i >= ridgeLayerStart) noise = 0.5f - Abs(noise);
 			elevation += noise * amplitude;
 			amplitude *= persistence;
@@ -33,37 +34,37 @@ public class TerrainGen
 	}
 
 
-	static float2 CalculateJiggle(float2 pos)
+	static Vector2 CalculateJiggle(Vector2 pos)
 	{
 		const float jiggle = 0.7f;
 
-		float ox = noiseGen.Evaluate(pos.x, pos.y) * jiggle;
-		float oy = noiseGen.Evaluate(pos.x - 10000, pos.y - 10000) * jiggle;
-		return new float2(ox, oy);
+		float ox = noiseGen.Evaluate(pos.X, pos.Y) * jiggle;
+		float oy = noiseGen.Evaluate(pos.X - 10000, pos.Y - 10000) * jiggle;
+		return new Vector2(ox, oy);
 	}
 
-	static float3[,] GeneratePointMap(int resolution, float worldSize, float2 gridCentre)
+	static Vector3[,] GeneratePointMap(int resolution, float worldSize, Vector2 gridCentre)
 	{
-		float3[,] pointMap = new float3[resolution, resolution];
+		Vector3[,] pointMap = new Vector3[resolution, resolution];
 
 		for (int y = 0; y < resolution; y++)
 		{
 			for (int x = 0; x < resolution; x++)
 			{
-				float2 localGridPos_sNorm = new float2(x, y) / (resolution - 1f) - float2.Half; // [-1, 1]
-				float2 gridWorldPos = gridCentre + worldSize * localGridPos_sNorm;
+				Vector2 localGridPos_sNorm = new Vector2(x, y) / (resolution - 1f) - new Vector2(0.5f, 0.5f); // [-1, 1]
+				Vector2 gridWorldPos = gridCentre + worldSize * localGridPos_sNorm;
 				gridWorldPos += CalculateJiggle(gridWorldPos); // perturb grid slightly for visual intrigue
 				float elevation = Max(0, CalculateElevation(gridWorldPos) + 0.8f); // clamp to 0 for water surface
-				pointMap[x, y] = new float3(gridWorldPos.x, elevation, gridWorldPos.y);
+				pointMap[x, y] = new Vector3(gridWorldPos.X, elevation, gridWorldPos.Y);
 			}
 		}
 
 		return pointMap;
 	}
 
-	public static Mesh GenerateTerrain(int resolution, float worldSize, float2 gridCentre)
+	public static Mesh GenerateTerrain(int resolution, float worldSize, Vector2 gridCentre)
 	{
-		float3[,] pointMap = GeneratePointMap(resolution, worldSize, gridCentre);
+		Vector3[,] pointMap = GeneratePointMap(resolution, worldSize, gridCentre);
 		MeshData meshData = new();
 
 		for (int y = 0; y < resolution - 1; y++)
@@ -77,10 +78,10 @@ public class TerrainGen
 
 		return meshData.ToMesh();
 
-		void AddTriangle(float3 a, float3 b, float3 c)
+		void AddTriangle(Vector3 a, Vector3 b, Vector3 c)
 		{
-			float2 texCoord = new float2(a.y + b.y + c.y, 0) / 3;
-			float3 surfaceNormal = float3.Cross(b - a, c - b).Normalized();
+			Vector2 texCoord = new Vector2(a.Y + b.Y + c.Y, 0) / 3;
+			Vector3 surfaceNormal = Vector3.Normalize(Vector3.Cross(b - a, c - b));
 
 			meshData.Points.AddRange([a, b, c]);
 			meshData.Normals.AddRange([surfaceNormal, surfaceNormal, surfaceNormal]);
@@ -90,9 +91,9 @@ public class TerrainGen
 
 	public class MeshData
 	{
-		public List<float3> Points = new();
-		public List<float3> Normals = new();
-		public List<float2> TexCoords = new();
+		public List<Vector3> Points = new();
+		public List<Vector3> Normals = new();
+		public List<Vector2> TexCoords = new();
 
 		public Mesh ToMesh()
 		{

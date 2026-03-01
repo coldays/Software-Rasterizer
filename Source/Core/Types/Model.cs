@@ -1,16 +1,30 @@
 using SoftwareRasterizer.Types;
+using System.Numerics;
 
 namespace SoftwareRasterizer;
 
-public class Model(Mesh mesh, Shader shader, string name = "Unnamed")
+public class Model
 {
-	public readonly string Name = name;
-	public readonly Mesh Mesh = mesh;
-	public Transform Transform = new();
-	public Shader Shader = shader;
-	public List<Rasterizer.RasterizerPoint> RasterizerPoints = new();
+    public Model(Mesh mesh, Shader shader, string name = "Unnamed")
+    {
+        Name = name;
+        Mesh = mesh;
+        Shader = shader;
+        Vertices = mesh.Vertices;
+        Normals = mesh.Normals;
+        TexCoords = mesh.TexCoords;
+        RasterizerPoints = new Rasterizer.RasterizerPoint[6 * mesh.Vertices.Length];
+        RasterizerPointsCount = 0;
+    }
 
-	public float3[] Vertices => Mesh.Vertices;
-	public float3[] Normals => Mesh.Normals;
-	public float2[] TexCoords => Mesh.TexCoords;
+    public readonly string Name;
+    public readonly Mesh Mesh;
+    public readonly Transform Transform = new();
+    public readonly Shader Shader;
+    public readonly Rasterizer.RasterizerPoint[] RasterizerPoints;
+    public int RasterizerPointsCount;
+
+    public Vector3[] Vertices;
+    public Vector3[] Normals;
+    public Vector2[] TexCoords;
 }

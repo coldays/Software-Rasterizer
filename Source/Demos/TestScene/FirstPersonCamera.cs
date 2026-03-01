@@ -1,6 +1,7 @@
 using SoftwareRasterizer.Types;
 using SoftwareRasterizer.Core;
 using static SoftwareRasterizer.Maths;
+using System.Numerics;
 
 namespace SoftwareRasterizer.Demo;
 
@@ -9,15 +10,15 @@ public class FirstPersonCamera(Transform transform)
 	float camYawTarget;
 	float camPitchTarget;
 
-	public void Update(float deltaTime, float2 screenSize)
+	public void Update(float deltaTime, Vector2 screenSize)
 	{
 		// Rotate camera with mouse
 		const float mouseSensitivity = 2f;
 		if (Input.IsHoldingMouse(MouseButton.Left))
 		{
-			float2 mouseDelta = Input.GetMouseDelta() / screenSize.x * mouseSensitivity;
-			camPitchTarget = Clamp(camPitchTarget - mouseDelta.y, ToRadians(-85), ToRadians(85));
-			camYawTarget -= mouseDelta.x;
+			Vector2 mouseDelta = Input.GetMouseDelta() / screenSize.X * mouseSensitivity;
+			camPitchTarget = Clamp(camPitchTarget - mouseDelta.Y, ToRadians(-85), ToRadians(85));
+			camYawTarget -= mouseDelta.X;
 			Input.LockCursor();
 		}
 		else if (Input.IsKeyDownThisFrame(Key.Q))
@@ -31,15 +32,15 @@ public class FirstPersonCamera(Transform transform)
 
 		// Move camera with WASD
 		const float camSpeed = 2.5f;
-		float3 moveDelta = float3.Zero;
+		Vector3 moveDelta = Vector3.Zero;
 
 		if (Input.IsKeyHeld(Key.W)) moveDelta += transform.Forward;
 		if (Input.IsKeyHeld(Key.S)) moveDelta -= transform.Forward;
 		if (Input.IsKeyHeld(Key.A)) moveDelta -= transform.Right;
 		if (Input.IsKeyHeld(Key.D)) moveDelta += transform.Right;
 
-		transform.Position += float3.Normalize(moveDelta) * camSpeed * deltaTime;
-		transform.Position.y = 1;
+		transform.Position += Vector3.Normalize(moveDelta) * camSpeed * deltaTime;
+		transform.Position.Y = 1;
 	}
 	
 }

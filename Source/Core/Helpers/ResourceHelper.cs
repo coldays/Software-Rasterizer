@@ -1,5 +1,6 @@
 using SoftwareRasterizer.Shaders;
 using SoftwareRasterizer.Types;
+using System.Numerics;
 
 namespace SoftwareRasterizer.Helpers;
 
@@ -10,7 +11,7 @@ public static class ResourceHelper
 		string objPath = GetResourcesPath("Models", name + ".obj");
 		string objString = File.ReadAllText(objPath);
 		Mesh mesh = ObjLoader.Load(objString);
-		Model model = new(mesh, shader ?? new LitShader(float3.Up, float3.One), name);
+		Model model = new(mesh, shader ?? new LitShader(new Vector3(0, 1, 0), Vector3.One), name);
 		return model;
 	}
 

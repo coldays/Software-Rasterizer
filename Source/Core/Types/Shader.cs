@@ -1,6 +1,8 @@
+using System.Numerics;
+
 namespace SoftwareRasterizer.Types;
 
 public abstract class Shader
 {
-	public abstract float3 PixelColour(float2 pixelCoord, float2 texCoord, float3 normal, float depth);
+	public abstract Vector3 PixelColour(Vector2 pixelCoord, Vector2 texCoord, Vector3 normal, float depth);
 }

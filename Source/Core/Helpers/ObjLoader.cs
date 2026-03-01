@@ -1,5 +1,6 @@
 using SoftwareRasterizer.Types;
 using System.Globalization;
+using System.Numerics;
 
 namespace SoftwareRasterizer.Helpers;
 
@@ -13,9 +14,9 @@ public static class ObjLoader
 	{
 		string[] lines = SplitByLine(modelString, true);
 
-		List<float3> vertexPositions = new();
-		List<float3> normals = new();
-		List<float2> texCoords = new();
+		List<Vector3> vertexPositions = new();
+		List<Vector3> normals = new();
+		List<Vector2> texCoords = new();
 		List<VertexData> allVertexData = new();
 
 		foreach (string line in lines)
@@ -24,20 +25,20 @@ public static class ObjLoader
 			if (line.StartsWith("v "))
 			{
 				string[] axisStrings = line[2..].Split(' ');
-				float3 v = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture), float.Parse(axisStrings[2], culture));
+				Vector3 v = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture), float.Parse(axisStrings[2], culture));
 				vertexPositions.Add(v);
 			}
 			// ---- Vertex normal ----
 			else if (line.StartsWith("vn "))
 			{
 				string[] axisStrings = line[3..].Split(' ');
-				float3 v = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture), float.Parse(axisStrings[2], culture));
+				Vector3 v = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture), float.Parse(axisStrings[2], culture));
 				normals.Add(v);
 			}
 			else if (line.StartsWith("vt "))
 			{
 				string[] axisStrings = line[3..].Split(' ');
-				float2 t = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture));
+				Vector2 t = new(float.Parse(axisStrings[0], culture), float.Parse(axisStrings[1], culture));
 				texCoords.Add(t);
 			}
 			// ---- Face Indices ----
@@ -54,9 +55,9 @@ public static class ObjLoader
 
 					VertexData vert = new()
 					{
-						Position = hasVertIndex ? vertexPositions[vertexIndex - 1] : float3.Zero,
-						Normal = hasNormalIndex ? normals[normalIndex - 1] : float3.Zero,
-						TexCoord = hasTexIndex ? texCoords[tCoordIndex - 1] : float2.Zero,
+						Position = hasVertIndex ? vertexPositions[vertexIndex - 1] : Vector3.Zero,
+						Normal = hasNormalIndex ? normals[normalIndex - 1] : Vector3.Zero,
+						TexCoord = hasTexIndex ? texCoords[tCoordIndex - 1] : Vector2.Zero,
 					};
 					if (i >= 3)
 					{
@@ -76,9 +77,9 @@ public static class ObjLoader
 
 	struct VertexData
 	{
-		public float3 Position;
-		public float3 Normal;
-		public float2 TexCoord;
+		public Vector3 Position;
+		public Vector3 Normal;
+		public Vector2 TexCoord;
 	}
 
 	static string[] SplitByLine(string text, bool removeEmptyEntries = true)

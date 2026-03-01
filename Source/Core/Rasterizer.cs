@@ -1,5 +1,6 @@
 //#define MT
 using SoftwareRasterizer.Types;
+using System.Numerics;
 using static System.Math;
 
 namespace SoftwareRasterizer;
@@ -26,12 +27,12 @@ public static class Rasterizer
 
 		foreach (Model model in data.Models)
 		{
-			int triCount = model.RasterizerPoints.Count / 3;
+            int triCount = model.RasterizerPointsCount / 3;
 
 #if MT
             Parallel.For(0, triCount, n =>
-			#else
-			for (int n = 0; n < triCount; n++)
+#else
+            for (int n = 0; n < triCount; n++)
 #endif
 			{
 				int i = n * 3;
@@ -39,48 +40,48 @@ public static class Rasterizer
 				RasterizerPoint r1 = model.RasterizerPoints[i + 1];
 				RasterizerPoint r2 = model.RasterizerPoints[i + 2];
 
-				float2 a = r0.ScreenPos;
-				float2 b = r1.ScreenPos;
-				float2 c = r2.ScreenPos;
+				Vector2 a = r0.ScreenPos;
+				Vector2 b = r1.ScreenPos;
+				Vector2 c = r2.ScreenPos;
 
 				// Triangle bounds
-				float minX = Min(Min(a.x, b.x), c.x);
-				float minY = Min(Min(a.y, b.y), c.y);
-				float maxX = Max(Max(a.x, b.x), c.x);
-				float maxY = Max(Max(a.y, b.y), c.y);
+				float minX = Min(Min(a.X, b.X), c.X);
+				float minY = Min(Min(a.Y, b.Y), c.Y);
+				float maxX = Max(Max(a.X, b.X), c.X);
+				float maxY = Max(Max(a.Y, b.Y), c.Y);
 				// Pixel block covering the triangle bounds
 				int blockStartX = Clamp((int)(minX), 0, target.Width - 1);
 				int blockStartY = Clamp((int)(minY), 0, target.Height - 1);
 				int blockEndX = Clamp(CeilInt(maxX), 0, target.Width - 1);
 				int blockEndY = Clamp(CeilInt(maxY), 0, target.Height - 1);
 
-				float3 invDepths = new(1 / r0.Depth, 1 / r1.Depth, 1 / r2.Depth);
-				float2 tx = r0.TexCoords * invDepths[0];
-				float2 ty = r1.TexCoords * invDepths[1];
-				float2 tz = r2.TexCoords * invDepths[2];
-				float3 nx = r0.Normals * invDepths[0];
-				float3 ny = r1.Normals * invDepths[1];
-				float3 nz = r2.Normals * invDepths[2];
+				Vector3 invDepths = new(1 / r0.Depth, 1 / r1.Depth, 1 / r2.Depth);
+				Vector2 tx = r0.TexCoords * invDepths[0];
+				Vector2 ty = r1.TexCoords * invDepths[1];
+				Vector2 tz = r2.TexCoords * invDepths[2];
+				Vector3 nx = r0.Normals * invDepths[0];
+				Vector3 ny = r1.Normals * invDepths[1];
+				Vector3 nz = r2.Normals * invDepths[2];
 
 				// Loop over the block of pixels covering the triangle bounds
 				for (int y = blockStartY; y <= blockEndY; y++)
 				{
 					for (int x = blockStartX; x <= blockEndX; x++)
 					{
-						float2 p = new(x, y);
+						Vector2 p = new(x, y);
 						if (Maths.PointInTriangle(a, b, c, p, out float weightA, out float weightB, out float weightC))
 						{
 							// Interpolate depths at each vertex to get value for current pixel
-							float depth = 1 / (invDepths.x * weightA + invDepths.y * weightB + invDepths.z * weightC);
+							float depth = 1 / (invDepths.X * weightA + invDepths.Y * weightB + invDepths.Z * weightC);
 
 							// Depth test (skip if something nearer has already been drawn)
 							int px = y * target.Width + x;
 							if (depth >= target.DepthBuffer[px]) continue;
 
 							// Interpolate texture coordinates at each vertex
-							float2 texCoord = (tx * weightA + ty * weightB + tz * weightC) * depth;
-							float3 normal = (nx * weightA + ny * weightB + nz * weightC) * depth;
-							float3 col = model.Shader.PixelColour(p, texCoord, normal, depth);
+							Vector2 texCoord = (tx * weightA + ty * weightB + tz * weightC) * depth;
+							Vector3 normal = (nx * weightA + ny * weightB + nz * weightC) * depth;
+							Vector3 col = model.Shader.PixelColour(p, texCoord, normal, depth);
 
 #if MT
 							// Thread-safe pixel update
@@ -104,10 +105,10 @@ public static class Rasterizer
 	// Create list of rasterization points for rendering the given model
 	static void ProcessModel(Model model)
 	{
-		Span<float3> viewPoints = stackalloc float3[3];
-		model.RasterizerPoints.Clear();
+		Span<Vector3> viewPoints = stackalloc Vector3[3];
+        model.RasterizerPointsCount = 0;
 
-		for (int i = 0; i < model.Vertices.Length; i += 3)
+        for (int i = 0; i < model.Vertices.Length; i += 3)
 		{
 			viewPoints[0] = VertexToView(model.Vertices[i + 0], model.Transform);
 			viewPoints[1] = VertexToView(model.Vertices[i + 1], model.Transform);
@@ -116,9 +117,9 @@ public static class Rasterizer
 			// Dividing by depths too close to zero causes numerical issues,
 			// so use some small positive value for the depth clip threshold
 			const float nearClipDst = 0.01f;
-			bool clip0 = viewPoints[0].z <= nearClipDst;
-			bool clip1 = viewPoints[1].z <= nearClipDst;
-			bool clip2 = viewPoints[2].z <= nearClipDst;
+			bool clip0 = viewPoints[0].Z <= nearClipDst;
+			bool clip1 = viewPoints[1].Z <= nearClipDst;
+			bool clip2 = viewPoints[2].Z <= nearClipDst;
 			int clipCount = BoolToInt(clip0) + BoolToInt(clip1) + BoolToInt(clip2);
 
 			switch (clipCount)
@@ -134,17 +135,17 @@ public static class Rasterizer
 					int indexClip = clip0 ? 0 : clip1 ? 1 : 2;
 					int indexNext = (indexClip + 1) % 3;
 					int indexPrev = (indexClip - 1 + 3) % 3;
-					float3 pointClipped = viewPoints[indexClip];
-					float3 pointA = viewPoints[indexNext];
-					float3 pointB = viewPoints[indexPrev];
+					Vector3 pointClipped = viewPoints[indexClip];
+					Vector3 pointA = viewPoints[indexNext];
+					Vector3 pointB = viewPoints[indexPrev];
 
 					// Fraction along triangle edge at which the depth is equal to the clip distance
-					float fracA = (nearClipDst - pointClipped.z) / (pointA.z - pointClipped.z);
-					float fracB = (nearClipDst - pointClipped.z) / (pointB.z - pointClipped.z);
+					float fracA = (nearClipDst - pointClipped.Z) / (pointA.Z - pointClipped.Z);
+					float fracB = (nearClipDst - pointClipped.Z) / (pointB.Z - pointClipped.Z);
 
 					// New triangle points (in view space)
-					float3 clipPointAlongEdgeA = float3.Lerp(pointClipped, pointA, fracA);
-					float3 clipPointAlongEdgeB = float3.Lerp(pointClipped, pointB, fracB);
+					Vector3 clipPointAlongEdgeA = Vector3.Lerp(pointClipped, pointA, fracA);
+					Vector3 clipPointAlongEdgeB = Vector3.Lerp(pointClipped, pointB, fracB);
 
 					// Create new triangles
 					AddRasterizerPoint(model, clipPointAlongEdgeB, i + indexClip, i + indexPrev, fracB);
@@ -163,17 +164,17 @@ public static class Rasterizer
 					int indexNext = (indexNonClip + 1) % 3;
 					int indexPrev = (indexNonClip - 1 + 3) % 3;
 
-					float3 pointNotClipped = viewPoints[indexNonClip];
-					float3 pointA = viewPoints[indexNext];
-					float3 pointB = viewPoints[indexPrev];
+					Vector3 pointNotClipped = viewPoints[indexNonClip];
+					Vector3 pointA = viewPoints[indexNext];
+					Vector3 pointB = viewPoints[indexPrev];
 
 					// Fraction along triangle edge at which the depth is equal to the clip distance
-					float fracA = (nearClipDst - pointNotClipped.z) / (pointA.z - pointNotClipped.z);
-					float fracB = (nearClipDst - pointNotClipped.z) / (pointB.z - pointNotClipped.z);
+					float fracA = (nearClipDst - pointNotClipped.Z) / (pointA.Z - pointNotClipped.Z);
+					float fracB = (nearClipDst - pointNotClipped.Z) / (pointB.Z - pointNotClipped.Z);
 
 					// New triangle points (in view space)
-					float3 clipPointAlongEdgeA = float3.Lerp(pointNotClipped, pointA, fracA);
-					float3 clipPointAlongEdgeB = float3.Lerp(pointNotClipped, pointB, fracB);
+					Vector3 clipPointAlongEdgeA = Vector3.Lerp(pointNotClipped, pointA, fracA);
+					Vector3 clipPointAlongEdgeB = Vector3.Lerp(pointNotClipped, pointB, fracB);
 
 					// Create new triangle
 					AddRasterizerPoint(model, clipPointAlongEdgeB, i + indexNonClip, i + indexPrev, fracB);
@@ -185,47 +186,59 @@ public static class Rasterizer
 		}
 	}
 
-	static void AddRasterizerPoint(Model model, float3 viewPoint, int vertIndex)
-	{
-		model.RasterizerPoints.Add(new RasterizerPoint()
-		{
-			Depth = viewPoint.z,
-			ScreenPos = ViewToScreen(viewPoint),
-			TexCoords = model.TexCoords[vertIndex],
-			Normals = model.Normals[vertIndex],
-		});
-	}
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    static void AddRasterizerPoint(Model model, Vector3 viewPoint, int vertIndex)
+    {
+        //model.RasterizerPoints[model.RasterizerPointsCount] = new RasterizerPoint()
+        //{
+        //	Depth = viewPoint.z,
+        //	ScreenPos = ViewToScreen(viewPoint),
+        //	TexCoords = model.TexCoords[vertIndex],
+        //	Normals = model.Normals[vertIndex],
+        //};
+        model.RasterizerPoints[model.RasterizerPointsCount].Depth = viewPoint.Z;
+        model.RasterizerPoints[model.RasterizerPointsCount].ScreenPos = ViewToScreen(viewPoint);
+        model.RasterizerPoints[model.RasterizerPointsCount].TexCoords = model.TexCoords[vertIndex];
+        model.RasterizerPoints[model.RasterizerPointsCount].Normals = model.Normals[vertIndex];
+        model.RasterizerPointsCount++;
+    }
 
-	static void AddRasterizerPoint(Model model, float3 viewPoint, int vertIndexA, int vertIndexB, float t)
-	{
-		model.RasterizerPoints.Add(new RasterizerPoint()
-		{
-			Depth = viewPoint.z,
-			ScreenPos = ViewToScreen(viewPoint),
-			TexCoords = float2.Lerp(model.TexCoords[vertIndexA], model.TexCoords[vertIndexB], t),
-			Normals = float3.Lerp(model.Normals[vertIndexA], model.Normals[vertIndexB], t),
-		});
-	}
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    static void AddRasterizerPoint(Model model, Vector3 viewPoint, int vertIndexA, int vertIndexB, float t)
+    {
+        //model.RasterizerPoints[model.RasterizerPointsCount] = new RasterizerPoint()
+        //{
+        //	Depth = viewPoint.z,
+        //	ScreenPos = ViewToScreen(viewPoint),
+        //	TexCoords = float2.Lerp(model.TexCoords[vertIndexA], model.TexCoords[vertIndexB], t),
+        //	Normals = float3.Lerp(model.Normals[vertIndexA], model.Normals[vertIndexB], t),
+        //};
+        model.RasterizerPoints[model.RasterizerPointsCount].Depth = viewPoint.Z;
+        model.RasterizerPoints[model.RasterizerPointsCount].ScreenPos = ViewToScreen(viewPoint);
+        model.RasterizerPoints[model.RasterizerPointsCount].TexCoords = Vector2.Lerp(model.TexCoords[vertIndexA], model.TexCoords[vertIndexB], t);
+        model.RasterizerPoints[model.RasterizerPointsCount].Normals = Vector3.Lerp(model.Normals[vertIndexA], model.Normals[vertIndexB], t);
+        model.RasterizerPointsCount++;
+    }
 
-	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
 	static int BoolToInt(bool b) => b ? 1 : 0;
 
 	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-	static float3 VertexToView(float3 vert, Transform transform)
+	static Vector3 VertexToView(Vector3 vert, Transform transform)
 	{
-		float3 vertex_world = transform.ToWorldPoint(vert);
-		float3 vertex_view = cam.Transform.ToLocalPoint(vertex_world);
+		Vector3 vertex_world = transform.ToWorldPoint(vert);
+		Vector3 vertex_view = cam.Transform.ToLocalPoint(vertex_world);
 		return vertex_view;
 	}
 
 	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-	static float2 ViewToScreen(float3 vertex_view)
+	static Vector2 ViewToScreen(Vector3 vertex_view)
 	{
 		float screenHeight_world = MathF.Tan(cam.Fov / 2) * 2;
-		float pixelsPerWorldUnit = target.Size.y / screenHeight_world / vertex_view.z;
+		float pixelsPerWorldUnit = target.Size.Y / screenHeight_world / vertex_view.Z;
 
-		float2 pixelOffset = new float2(vertex_view.x, vertex_view.y) * pixelsPerWorldUnit;
-		float2 vertex_screen = target.Size / 2f + pixelOffset;
+		Vector2 pixelOffset = new Vector2(vertex_view.X, vertex_view.Y) * pixelsPerWorldUnit;
+		Vector2 vertex_screen = target.Size / 2f + pixelOffset;
 		return vertex_screen;
 	}
 
@@ -235,8 +248,8 @@ public static class Rasterizer
 	public struct RasterizerPoint
 	{
 		public float Depth;
-		public float2 ScreenPos;
-		public float2 TexCoords;
-		public float3 Normals;
+		public Vector2 ScreenPos;
+		public Vector2 TexCoords;
+		public Vector3 Normals;
 	}
 }

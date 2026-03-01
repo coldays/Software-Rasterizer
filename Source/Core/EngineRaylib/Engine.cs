@@ -50,8 +50,8 @@ public static class Engine
 	{
 		for (int i = 0; i < renderTarget.ColourBuffer.Length; i++)
 		{
-			float3 col = renderTarget.ColourBuffer[i];
-			data[i] = new Color((int)(Math.Clamp(col.r, 0, 1) * 255), (int)(Math.Clamp(col.g, 0, 1) * 255), (int)(Math.Clamp(col.b, 0, 1) * 255), 255);
+			Vector3 col = renderTarget.ColourBuffer[i];
+			data[i] = new Color((int)(Math.Clamp(col.X, 0, 1) * 255), (int)(Math.Clamp(col.Y, 0, 1) * 255), (int)(Math.Clamp(col.Z, 0, 1) * 255), 255);
 		}
 		
 	}

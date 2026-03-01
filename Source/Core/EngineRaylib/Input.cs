@@ -38,10 +38,10 @@ public static class Input
 		return Raylib.IsMouseButtonDown((Raylib_cs.MouseButton)button);
 	}
 
-	public static float2 GetMousePosition() => ToFloat2(Raylib.GetMousePosition());
-	public static float2 GetMouseDelta() => ToFloat2(Raylib.GetMouseDelta());
+	public static Vector2 GetMousePosition() => ToVector2(Raylib.GetMousePosition());
+	public static Vector2 GetMouseDelta() => ToVector2(Raylib.GetMouseDelta());
 
-	static float2 ToFloat2(Vector2 v) => new (v.X, v.Y);
+	static Vector2 ToVector2(Vector2 v) => new (v.X, v.Y);
 }
 
 public enum Key

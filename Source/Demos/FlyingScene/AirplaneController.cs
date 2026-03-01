@@ -1,5 +1,6 @@
 using SoftwareRasterizer.Core;
 using SoftwareRasterizer.Types;
+using System.Numerics;
 
 namespace SoftwareRasterizer.Demo;
 
@@ -11,7 +12,7 @@ public class AirplaneController(Model model)
 	const float rollSpeed = MathF.PI / 2;
 	const float pitchSpeed = MathF.PI / 3.5f;
 	
-	float3 position = new (0, 10, 0);
+	Vector3 position = new (0, 10, 0);
 	float pitch;
 	float yaw;
 	float roll;
@@ -22,7 +23,7 @@ public class AirplaneController(Model model)
 	public void Update(float deltaTime)
 	{
 		Transform transform = model.Transform;
-		float3 forward = transform.Forward;
+		Vector3 forward = transform.Forward;
 		
 		float deltaRoll = 0;
 		float deltaPitch = 0;

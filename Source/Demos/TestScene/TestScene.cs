@@ -1,6 +1,7 @@
 using SoftwareRasterizer.Helpers;
 using SoftwareRasterizer.Shaders;
 using SoftwareRasterizer.Types;
+using System.Numerics;
 
 namespace SoftwareRasterizer.Demo;
 
@@ -11,10 +12,10 @@ public class TestScene : Scene
 	public TestScene()
 	{
 		// Create shaders
-		float3 dirToSun = float3.Normalize(new float3(0.3f, 1f, 0.6f));
+		Vector3 dirToSun = Vector3.Normalize(new Vector3(0.3f, 1f, 0.6f));
 		LitTextureShader floorShader = new(dirToSun, ResourceHelper.LoadTexture("uvGrid"));
 		LitTextureShader boyShader = new(dirToSun, ResourceHelper.LoadTexture("daveTex"));
-		LitShader dragonShader = new(dirToSun, new float3(82, 255, 190) / 255f);
+		LitShader dragonShader = new(dirToSun, new Vector3(82, 255, 190) / 255f);
 		LitTextureShader paletteShader = new(dirToSun, ResourceHelper.LoadTexture("colMap"));
 
 		// Load models
@@ -28,15 +29,15 @@ public class TestScene : Scene
 
 		// Set positions, rotations, and scales
 		boy.Transform.Yaw = -MathF.PI / 5;
-		boy.Transform.Position = float3.Forward * -2.5f;
-		fox.Transform.Position = new float3(0.7f, 0, -2.8f);
-		fox.Transform.Scale = float3.One * 0.2075f;
+		boy.Transform.Position = new Vector3(0, 0, 1) * -2.5f;
+		fox.Transform.Position = new Vector3(0.7f, 0, -2.8f);
+		fox.Transform.Scale = Vector3.One * 0.2075f;
 		dragon.Transform.Yaw = MathF.PI / 3;
-		dragon.Transform.Position = float3.Forward * 0.8f;
-		tree.Transform.Position = new float3(-3.5f, 0, -1f);
-		tree2.Transform.Position = new float3(4, 0, 3);
+		dragon.Transform.Position = new Vector3(0, 0, 1) * 0.8f;
+		tree.Transform.Position = new Vector3(-3.5f, 0, -1f);
+		tree2.Transform.Position = new Vector3(4, 0, 3);
 
-		Data.Camera.Transform.Position = new float3(0, 0, -4.5f);
+		Data.Camera.Transform.Position = new Vector3(0, 0, -4.5f);
 		camController = new FirstPersonCamera(Data.Camera.Transform);
 	}
 
@@ -44,8 +45,8 @@ public class TestScene : Scene
 	public override void Update(RenderTarget renderTarget, float deltaTime)
 	{
 		// Clear render target to black (and reset depth)
-		float3 skyCol = new float3(167, 214, 250) / 255f;
-		skyCol = float3.Zero;
+		Vector3 skyCol = new Vector3(167, 214, 250) / 255f;
+		skyCol = Vector3.Zero;
 		renderTarget.Clear(skyCol);
 
 		camController.Update(deltaTime, renderTarget.Size);

@@ -1,3 +1,4 @@
+using System.Numerics;
 using SoftwareRasterizer.Helpers;
 using SoftwareRasterizer.Shaders;
 using SoftwareRasterizer.Types;
@@ -8,7 +9,7 @@ namespace SoftwareRasterizer.Demo;
 
 public class FlyingScene : Scene
 {
-	public static float3 dirToSun = float3.Normalize(new(0.3f, 1f, 0.6f));
+	public static Vector3 dirToSun = Vector3.Normalize(new(0.3f, 1f, 0.6f));
 	const float terrainRes = 35;
 	const float terrainChunkSize = 50;
 	readonly TerrainShader terrainShader = new(dirToSun);
@@ -19,7 +20,7 @@ public class FlyingScene : Scene
 	readonly Model fox;
 	readonly Model propeller;
 	readonly AirplaneController airplaneController;
-	readonly float3 skyCol = new float3(131, 188, 243) / 255;
+	readonly Vector3 skyCol = new Vector3(131, 188, 243) / 255;
 	readonly CloudData[] clouds;
 	readonly Random rng = new (1024);
 
@@ -36,7 +37,7 @@ public class FlyingScene : Scene
 		// Load shaders
 		LitTextureShader boyShader = new(dirToSun, ResourceHelper.LoadTexture("daveTex"));
 		LitTextureShader paletteShader = new(dirToSun, ResourceHelper.LoadTexture("colMap"));
-		CloudShader cloudShader = new(dirToSun, float3.One);
+		CloudShader cloudShader = new(dirToSun, Vector3.One);
 
 		terrainShader.SkyCol = skyCol;
 		cloudShader.AtmosCol = skyCol;
@@ -47,13 +48,13 @@ public class FlyingScene : Scene
 		
 		boy = ResourceHelper.LoadModel("dave", boyShader);
 		boy.Transform.Parent = airplaneController.model.Transform;
-		boy.Transform.Scale = float3.One * 0.27f;
-		boy.Transform.Position = new float3(0, -0.12f, -0.17f);
+		boy.Transform.Scale = Vector3.One * 0.27f;
+		boy.Transform.Position = new Vector3(0, -0.12f, -0.17f);
 
 		fox = ResourceHelper.LoadModel("foxSitting", paletteShader);
 		fox.Transform.Parent = airplaneController.model.Transform;
-		fox.Transform.Scale = float3.One * 0.27f * 0.45f;
-		fox.Transform.Position = new float3(0, -0.1f, -0.6f);
+		fox.Transform.Scale = Vector3.One * 0.27f * 0.45f;
+		fox.Transform.Position = new Vector3(0, -0.1f, -0.6f);
 
 		propeller = ResourceHelper.LoadModel("propeller", paletteShader);
 		propeller.Transform.Parent = airplaneController.model.Transform;
@@ -71,22 +72,22 @@ public class FlyingScene : Scene
 
 	float RandomUNorm() => (float)rng.NextDouble();
 
-	float3 RandomInBox(float3 centre, float3 size)
+	Vector3 RandomInBox(Vector3 centre, Vector3 size)
 	{
-		float ox = size.x * (RandomUNorm() - 0.5f);
-		float oy = size.y * (RandomUNorm() - 0.5f);
-		float oz = size.z * (RandomUNorm() - 0.5f);
+		float ox = size.X * (RandomUNorm() - 0.5f);
+		float oy = size.Y * (RandomUNorm() - 0.5f);
+		float oz = size.Z * (RandomUNorm() - 0.5f);
 
-		return centre + new float3(ox, oy, oz);
+		return centre + new Vector3(ox, oy, oz);
 	}
 
-	float3 CameraPosition => Data.Camera.Transform.Position;
+	Vector3 CameraPosition => Data.Camera.Transform.Position;
 
 
 	void NextCloudSpawn(CloudData cloud, bool isFirstSpawn = false)
 	{
-		float3 spawnBoxSize = new(terrainChunkSize * 10, 30, terrainChunkSize * 10);
-		float3 spawnBoxCentre = new(CameraPosition.x, 25, CameraPosition.z);
+		Vector3 spawnBoxSize = new(terrainChunkSize * 10, 30, terrainChunkSize * 10);
+		Vector3 spawnBoxCentre = new(CameraPosition.X, 25, CameraPosition.Z);
 		cloud.scale = Lerp(1, 3, RandomUNorm());
 		cloud.model.Transform.Yaw = RandomUNorm() * PI * 2;
 		cloud.model.Transform.Position = RandomInBox(spawnBoxCentre, spawnBoxSize);
@@ -98,11 +99,11 @@ public class FlyingScene : Scene
 		// Scale cloud based on lifetime, and respawn if it has disappeared
 		cloud.lifeTime += deltaTime;
 		float scaleT = Min(cloud.lifeTime, cloudLifeMax - cloud.lifeTime) / 10;
-		cloud.model.Transform.Scale = float3.One * cloud.scale * EaseCubeInOut(scaleT);
+		cloud.model.Transform.Scale = Vector3.One * cloud.scale * EaseCubeInOut(scaleT);
 		if (cloud.lifeTime > cloudLifeMax) NextCloudSpawn(cloud);
 
 		// Move with wind
-		float3 windVelocity = new float3(0.35f, 0, -0.1f) * 3;
+		Vector3 windVelocity = new Vector3(0.35f, 0, -0.1f) * 3;
 		cloud.model.Transform.Position += windVelocity * deltaTime;
 	}
 
@@ -149,10 +150,10 @@ public class FlyingScene : Scene
 	}
 	
 	// Refresh list of terrain chunks to be drawn this frame
-	void UpdateTerrainChunks(float3 camPos, int resolution, float chunkSize)
+	void UpdateTerrainChunks(Vector3 camPos, int resolution, float chunkSize)
 	{
-		int centreX = (int)Round(camPos.x / chunkSize);
-		int centreY = (int)Round(camPos.z / chunkSize);
+		int centreX = (int)Round(camPos.X / chunkSize);
+		int centreY = (int)Round(camPos.Z / chunkSize);
 		terrainChunksActive.Clear();
 
 		// Create grid of terrain chunks centered around camera position
@@ -162,14 +163,14 @@ public class FlyingScene : Scene
 		{
 			for (int x = centreX - n; x <= centreX + n; x++)
 			{
-				float3 c = new float3(x, 0, y) * chunkSize;
-				if (float3.Dot(c - camPos, Data.Camera.Transform.Forward) < 0.3 && (Abs(y - centreY) > 1 || Abs(x - centreX) > 1)) continue;
+				Vector3 c = new Vector3(x, 0, y) * chunkSize;
+				if (Vector3.Dot(c - camPos, Data.Camera.Transform.Forward) < 0.3 && (Abs(y - centreY) > 1 || Abs(x - centreX) > 1)) continue;
 
 				if (!terrainChunkLookup.TryGetValue((x, y), out Model chunk))
 				{
 					if (genCountThisFrame < 3)
 					{
-						float2 centre = new float2(x, y) * chunkSize; // chunk centre in (2D) world space
+						Vector2 centre = new Vector2(x, y) * chunkSize; // chunk centre in (2D) world space
 						chunk = new Model(TerrainGen.GenerateTerrain(resolution, chunkSize, centre), terrainShader);
 					}
 
@@ -188,11 +189,11 @@ public class FlyingScene : Scene
 
 	public void UpdateCam(AirplaneController target)
 	{
-		float3 targetFwd = target.model.Transform.Forward;
-		targetFwd.y = 0;
-		targetFwd = targetFwd.Normalized();
+		Vector3 targetFwd = target.model.Transform.Forward;
+		targetFwd.Y = 0;
+		targetFwd = Vector3.Normalize(targetFwd);
 
-		Data.Camera.Transform.Position = target.model.Transform.Position - targetFwd * 5 + new float3(0, 1.5f, 0);
+		Data.Camera.Transform.Position = target.model.Transform.Position - targetFwd * 5 + new Vector3(0, 1.5f, 0);
 		Data.Camera.Transform.SetRotation(0, target.model.Transform.Yaw, 0);
 	}
 }

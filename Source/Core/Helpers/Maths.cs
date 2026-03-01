@@ -1,4 +1,5 @@
 using SoftwareRasterizer.Types;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace SoftwareRasterizer;
@@ -10,28 +11,45 @@ public static class Maths
 	// Test if point p is inside triangle ABC
 	// Note: non-clockwise triangles are considered 'back-faces' and are ignored
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool PointInTriangle(in float2 a, in float2 b, in float2 c, in float2 p, out float weightA, out float weightB, out float weightC)
+	public static bool PointInTriangle(in Vector2 a, in Vector2 b, in Vector2 c, in Vector2 p, out float weightA, out float weightB, out float weightC)
 	{
-		// Test if point is on right side of each edge segment
-		float areaABP = SignedParallelogramArea(a, b, p);
-		float areaBCP = SignedParallelogramArea(b, c, p);
-		float areaCAP = SignedParallelogramArea(c, a, p);
-		bool inTri = areaABP >= 0 && areaBCP >= 0 && areaCAP >= 0;
+        /// Test if point is on right side of each edge segment
+        //float areaABP = SignedParallelogramArea(a, b, p);
+        //float areaBCP = SignedParallelogramArea(b, c, p);
+        //float areaCAP = SignedParallelogramArea(c, a, p);
+        float areaABP, areaBCP, areaCAP;
 
-		// Weighting factors (barycentric coordinates)
-		float totalArea = (areaABP + areaBCP + areaCAP);
-		float invAreaSum = 1 / totalArea;
-		weightA = areaBCP * invAreaSum;
-		weightB = areaCAP * invAreaSum;
-		weightC = areaABP * invAreaSum;
+        if ((areaABP = SignedParallelogramArea(a, b, p)) < 0
+            || (areaBCP = SignedParallelogramArea(b, c, p)) < 0
+            || (areaCAP = SignedParallelogramArea(c, a, p)) < 0)
+        {
+            weightA = 0;
+            weightB = 0;
+            weightC = 0;
+            return false;
+        }
 
-		return inTri && totalArea > 0;
-	}
+        // Weighting factors (barycentric coordinates)
+        float totalArea = (areaABP + areaBCP + areaCAP);
+        if (totalArea <= 0)
+        {
+            weightA = 0;
+            weightB = 0;
+            weightC = 0;
+            return false;
+        }
+        float invAreaSum = 1 / totalArea;
+        weightA = areaBCP * invAreaSum;
+        weightB = areaCAP * invAreaSum;
+        weightC = areaABP * invAreaSum;
+
+        return true;
+    }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float SignedParallelogramArea(in float2 a, in float2 b, in float2 c)
+	public static float SignedParallelogramArea(in Vector2 a, in Vector2 b, in Vector2 c)
 	{
-		return (c.x - a.x) * (b.y - a.y) + (c.y - a.y) * (a.x - b.x);
+		return (c.X - a.X) * (b.Y - a.Y) + (c.Y - a.Y) * (a.X - b.X);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
