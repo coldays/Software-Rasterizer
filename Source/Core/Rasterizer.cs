@@ -1,3 +1,4 @@
+//#define MT
 using SoftwareRasterizer.Types;
 using static System.Math;
 
@@ -14,13 +15,24 @@ public static class Rasterizer
 		Rasterizer.target = target;
 		Rasterizer.cam = data.Camera;
 
+#if MT
 		Parallel.ForEach(data.Models, ProcessModel);
+#else
+		for (int i = 0; i < data.Models.Count; i++)
+		{
+			ProcessModel(data.Models[i]);
+		}
+#endif
 
 		foreach (Model model in data.Models)
 		{
 			int triCount = model.RasterizerPoints.Count / 3;
 
-			Parallel.For(0, triCount, n =>
+#if MT
+            Parallel.For(0, triCount, n =>
+			#else
+			for (int n = 0; n < triCount; n++)
+#endif
 			{
 				int i = n * 3;
 				RasterizerPoint r0 = model.RasterizerPoints[i + 0];
@@ -70,8 +82,10 @@ public static class Rasterizer
 							float3 normal = (nx * weightA + ny * weightB + nz * weightC) * depth;
 							float3 col = model.Shader.PixelColour(p, texCoord, normal, depth);
 
+#if MT
 							// Thread-safe pixel update
 							lock (target.locks[px])
+#endif
 							{
 								if (depth >= target.DepthBuffer[px]) continue;
 								target.ColourBuffer[px] = col;
@@ -80,7 +94,10 @@ public static class Rasterizer
 						}
 					}
 				}
-			});
+			}
+#if MT
+            );
+#endif
 		}
 	}
 

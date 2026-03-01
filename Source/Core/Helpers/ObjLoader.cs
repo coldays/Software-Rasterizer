@@ -46,10 +46,11 @@ public static class ObjLoader
 				string[] faceGroupStrings = line[2..].Split(' ');
 				for (int i = 0; i < faceGroupStrings.Length; i++)
 				{
+					int vertexIndex = 0, tCoordIndex = 0, normalIndex = 0;
 					string[] faceEntryStrings = faceGroupStrings[i].Split('/');
-					bool hasVertIndex = int.TryParse(faceEntryStrings[0], culture, out int vertexIndex);
-					bool hasTexIndex = int.TryParse(faceEntryStrings[1], culture, out int tCoordIndex);
-					bool hasNormalIndex = int.TryParse(faceEntryStrings[2], culture, out int normalIndex);
+					bool hasVertIndex = faceEntryStrings.Length > 0 && int.TryParse(faceEntryStrings[0], culture, out vertexIndex);
+					bool hasTexIndex = faceEntryStrings.Length > 1 && int.TryParse(faceEntryStrings[1], culture, out tCoordIndex);
+					bool hasNormalIndex = faceEntryStrings.Length > 2 && int.TryParse(faceEntryStrings[2], culture, out normalIndex);
 
 					VertexData vert = new()
 					{
