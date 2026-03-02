@@ -4,6 +4,9 @@ namespace SoftwareRasterizer.Types;
 
 public class RenderTarget(int w, int h)
 {
+	/// <summary>
+	/// RGB 0..1
+	/// </summary>
 	public readonly Vector3[] ColourBuffer = new Vector3[w * h];
 	public readonly float[] DepthBuffer = new float[w * h];
 	public readonly object[] locks = new object[w * h];
@@ -14,15 +17,8 @@ public class RenderTarget(int w, int h)
 
 	public void Clear(Vector3 bgCol)
 	{
-		for (int i = 0; i < ColourBuffer.Length; i++)
-		{
-			ColourBuffer[i] = bgCol;
-		}
-
-		for (int i = 0; i < DepthBuffer.Length; i++)
-		{
-			DepthBuffer[i] = float.PositiveInfinity;
-		}
+		Array.Fill(ColourBuffer, bgCol);
+		Array.Fill(DepthBuffer, float.PositiveInfinity);
 
 		if (locks[0] == null)
 		{
